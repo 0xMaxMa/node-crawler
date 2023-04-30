@@ -81,3 +81,6 @@ Make sure to start the crawler before the API if you intend to run them together
 ```
 go run ./ .
 ```
+
+#### Sample Page (listing all nodes crawled)
+![Nodes](https://github.com/VinayNR/node-crawler/blob/main/frontend/Nodes.png)
