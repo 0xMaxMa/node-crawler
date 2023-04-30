@@ -12,7 +12,9 @@ import (
 func createDB(db *sql.DB) error {
 	sqlStmt := `
 	CREATE TABLE nodes (
-		ID text not null, 
+		ID text not null,
+		ip text,
+		conn_type text,
 		name text,
 		version_major number,
 		version_minor number,
@@ -24,8 +26,10 @@ func createDB(db *sql.DB) error {
 		os_architecture text,
 		language_name text,
 		language_version text,
+		total_difficulty text,
 		last_crawled datetime,
 		country_name text,
+		validator boolean,
 		PRIMARY KEY (ID)
 	);
 	delete from nodes;
@@ -43,13 +47,17 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 	}
 	stmt, err := tx.Prepare(
 		`insert into nodes(
-			ID, 
+			ID,
+			ip,
+			conn_type,
 			name, 
 			version_major, version_minor, version_patch, version_tag, version_build, version_date, 
 			os_name, os_architecture, 
-			language_name, language_version, last_crawled, country_name)
-			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(ID) DO UPDATE SET 
+			language_name, language_version, total_difficulty, last_crawled, country_name, validator)
+			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(ID) DO UPDATE SET 
 			name=excluded.name,
+			ip=excluded.ip,
+			conn_type=excluded.conn_type,
 			version_major=excluded.version_major,
 			version_minor=excluded.version_minor,
 			version_patch=excluded.version_patch,
@@ -60,18 +68,22 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 			os_architecture=excluded.os_architecture,
 			language_name=excluded.language_name,
 			language_version=excluded.language_version,
+			total_difficulty=excluded.total_difficulty,
 			last_crawled=excluded.last_crawled,
-			country_name=excluded.country_name
+			country_name=excluded.country_name,
+			validator=excluded.validator
 			WHERE name=excluded.name OR excluded.name != "unknown"`)
 	if err != nil {
 		return err
 	}
 
 	for _, node := range crawledNodes {
-		parsed := parser.ParseVersionString(node.ClientType)
+		parsed, e := parser.ParseVersionString(node.ClientType)
 		if parsed != nil {
 			_, err = stmt.Exec(
 				node.ID,
+				node.IP,
+				node.ConnType,
 				parsed.Name,
 				parsed.Version.Major,
 				parsed.Version.Minor,
@@ -83,11 +95,39 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 				parsed.Os.Architecture,
 				parsed.Language.Name,
 				parsed.Language.Version,
+				node.TotalDifficulty,
 				time.Now(),
 				node.Country,
+				node.Validator,
 			)
 			if err != nil {
 				panic(err)
+			}
+		} else {
+			if e == nil {
+				_, err = stmt.Exec(
+					node.ID,
+					node.IP,
+					node.ConnType,
+					"",
+					0,
+					0,
+					0,
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					node.TotalDifficulty,
+					time.Now(),
+					node.Country,
+					node.Validator,
+				)
+				if err != nil {
+					panic(err)
+				}
 			}
 		}
 	}

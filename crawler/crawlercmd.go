@@ -110,7 +110,7 @@ func crawlNodes(ctx *cli.Context) error {
 	}
 
 	var db *sql.DB
-	if ctx.IsSet(tableNameFlag.Name) {
+	if ctx.IsSet(tableNameFlag.Name) {		
 		name := ctx.String(tableNameFlag.Name)
 		shouldInit := false
 		if _, err := os.Stat(name); os.IsNotExist(err) {

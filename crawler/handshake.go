@@ -36,6 +36,7 @@ type clientInfo struct {
 	Blockheight     string
 	TotalDifficulty *big.Int
 	HeadHash        common.Hash
+	Validator       bool
 }
 
 func getClientInfo(genesis *core.Genesis, networkID uint64, nodeURL string, n *enode.Node) (*clientInfo, error) {

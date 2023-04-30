@@ -41,17 +41,21 @@ func (p *ParsedInfo) String() string {
 	return fmt.Sprintf("%v (%v) %v %v", p.Name, p.Version, p.Os, p.Language)
 }
 
-func ParseVersionString(input string) *ParsedInfo {
+func ParseVersionString(input string) (*ParsedInfo, error) {
 	var output ParsedInfo
+
+	if input == "" {
+		return nil, nil
+	}
 
 	// Quick fix to filter out enodes.
 	if strings.Contains(input, "enode://") {
-		return nil
+		return nil, fmt.Errorf("version string contains enode")
 	}
 
 	// If there exists more than one version, don't count it
 	if strings.Count(input, "/v") > 1 {
-		return nil
+		return nil, fmt.Errorf("version string contains more than one version")
 	}
 
 	// version string consists of four components, divided by /
@@ -59,7 +63,7 @@ func ParseVersionString(input string) *ParsedInfo {
 	l := len(s)
 	output.Name = strings.ToLower(s[0])
 	if output.Name == "" {
-		return nil
+		return nil, nil
 	}
 
 	if l == 5 || l == 7 {
@@ -79,9 +83,9 @@ func ParseVersionString(input string) *ParsedInfo {
 
 	if output.Version.Error {
 		fmt.Printf(" -> Error Parsing: '%s', %v\n", input, output)
-		return nil
+		return nil, fmt.Errorf("version string error")
 	}
-	return &output
+	return &output, nil
 }
 
 func parseLanguage(input string) LanguageInfo {

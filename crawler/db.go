@@ -26,7 +26,7 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 		return err
 	}
 	stmt, err := tx.Prepare(
-		`insert into nodes(ID, 
+		`insert into nodes(ID,
 			Now,
 			ClientType,
 			PK,
@@ -45,8 +45,9 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 			LastSeen,
 			Seq,
 			Score,
-			ConnType) 
-			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+			ConnType,
+			Validator) 
+			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		return err
 	}
@@ -102,6 +103,14 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 				fmt.Sprintf("%v,%v", ipRecord.Location.Latitude, ipRecord.Location.Longitude)
 		}
 
+		// check for attnets in enode record
+		var a Attnets
+		err := n.N.Record().Load(&a)
+
+		// if present - its a validator node with great probability
+		var isValidator bool
+		isValidator = !bytes.Equal(a, make([]byte, len(a)))
+
 		_, err = stmt.Exec(
 			n.N.ID().String(),
 			now.String(),
@@ -123,6 +132,7 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 			n.Seq,
 			n.Score,
 			connType,
+			isValidator,
 		)
 		if err != nil {
 			return err
@@ -135,7 +145,7 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 func createDB(db *sql.DB) error {
 	sqlStmt := `
 	CREATE TABLE nodes (
-		ID text not null, 
+		ID text not null,
 		Now text not null,
 		ClientType text,
 		PK text,
@@ -155,6 +165,7 @@ func createDB(db *sql.DB) error {
 		Seq number,
 		Score number,
 		ConnType text,
+		Validator BOOLEAN,
 		PRIMARY KEY (ID, Now)
 	);
 	delete from nodes;

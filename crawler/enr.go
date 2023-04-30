@@ -32,7 +32,11 @@ import (
 // ETH2 is a SSZ encoded field.
 type ETH2 []byte
 
+type Attnets []byte
+
 func (v ETH2) ENRKey() string { return "eth2" }
+
+func (a Attnets) ENRKey() string { return "attnets" }
 
 // parseNode parses a node record and verifies its signature.
 func parseNode(source string) (*enode.Node, error) {
@@ -47,7 +51,7 @@ func parseNode(source string) (*enode.Node, error) {
 }
 
 // parseRecord parses a node record from hex, base64, or raw binary input.
-func parseRecord(source string) (*enr.Record, error) {
+func parseRecord(source string) (*enr.Record, error) {	
 	bin := []byte(source)
 	if d, ok := decodeRecordHex(bytes.TrimSpace(bin)); ok {
 		bin = d

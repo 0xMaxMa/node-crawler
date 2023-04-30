@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	crawlerDBPath = flag.String("crawler-db-path", "nodetable", "Crawler Database SQLite Path")
+	crawlerDBPath = flag.String("crawler-db-path", "../crawler/nodetable", "Crawler Database SQLite Path")
 	apiDBPath     = flag.String("api-db-path", "nodes", "API Database SQLite Path")
 	dropNodesTime = flag.Duration("drop-time", 24*time.Hour, "Time to drop crawled nodes")
 )
@@ -54,11 +54,13 @@ func main() {
 
 // newNodeDeamon reads new nodes from the crawler and puts them in the db
 // Might trigger the invalidation of caches for the api in the future
-func newNodeDeamon(wg *sync.WaitGroup, crawlerDB, nodeDB *sql.DB) {
+func newNodeDeamon(wg *sync.WaitGroup, crawlerDB *sql.DB, nodeDB *sql.DB) {
 	defer wg.Done()
 	lastCheck := time.Time{}
 	for {
 		nodes, err := input.ReadRecentNodes(crawlerDB, lastCheck)
+		fmt.Println("Time of last check: ", lastCheck)
+		fmt.Println("Read nodes from crawler db : ", len(nodes))
 		if err != nil {
 			fmt.Printf("Error reading nodes: %v\n", err)
 			return
@@ -71,7 +73,7 @@ func newNodeDeamon(wg *sync.WaitGroup, crawlerDB, nodeDB *sql.DB) {
 			}
 			fmt.Printf("%d nodes inserted\n", len(nodes))
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Minute)
 	}
 }
 

@@ -19,7 +19,7 @@ type Api struct {
 }
 
 func New(sdb *sql.DB) *Api {
-	cache, err := lru.New(256)
+	cache, err := lru.New(1024)
 	if err != nil {
 		return nil
 	}
@@ -33,7 +33,7 @@ func (a *Api) dropCacheLoop() {
 	// Drop the cache every 2 minutes
 	for range ticker.C {
 		fmt.Println("Dropping Cache")
-		c, err := lru.New(256)
+		c, err := lru.New(1024)
 		if err != nil {
 			panic(err)
 		}
@@ -47,6 +47,7 @@ func (a *Api) HandleRequests(wg *sync.WaitGroup) {
 	router.HandleFunc("/", func(rw http.ResponseWriter, r *http.Request) { rw.Write([]byte("Hello")) })
 	router.HandleFunc("/v1/dashboard", a.handleDashboard).Queries("filter", "{filter}")
 	router.HandleFunc("/v1/dashboard", a.handleDashboard)
+	router.HandleFunc("/v1/all", a.getAllData)
 	fmt.Println("Start serving on port 10000")
 	http.ListenAndServe(":10000", router)
 }
@@ -54,6 +55,16 @@ func (a *Api) HandleRequests(wg *sync.WaitGroup) {
 type client struct {
 	Name  string `json:"name"`
 	Count int    `json:"count"`
+}
+
+type NodeApiData struct {
+	ID              string
+	IP              string
+	ConnType        string
+	OS              string
+	Client          string
+	Language        string
+	Validator       bool
 }
 
 func addFilterArgs(vars map[string]string) (string, []interface{}, error) {
@@ -204,6 +215,29 @@ func (a *Api) handleDashboard(rw http.ResponseWriter, r *http.Request) {
 
 	res := result{Clients: clients, Languages: language, OperatingSystems: operatingSystems, Versions: versions, Countries: countries}
 	a.storeCache(topClientsQuery, topLanguageQuery, topOsQuery, topCountriesQuery, topVersionQuery, whereArgs, res)
+	json.NewEncoder(rw).Encode(res)
+}
+
+// no caching
+func (a *Api) getAllData(rw http.ResponseWriter, r *http.Request) {
+	allDataQuery := "SELECT ID, IP, CONN_TYPE, os_name || '-' || os_architecture as OS, name || '-' || version_major || '.' || version_minor || '.' || version_patch as Client, language_name || language_version as Language, Validator FROM nodes"
+	
+	// make db call
+	rows, err := a.db.Query(allDataQuery)
+	if err != nil {
+		panic(err)
+	}
+
+	var res []NodeApiData
+	for rows.Next() {
+		var r NodeApiData
+		err = rows.Scan(&r.ID, &r.IP, &r.ConnType, &r.OS, &r.Client, &r.Language, &r.Validator)
+		if err != nil {
+			panic(err)
+		}
+
+		res = append(res, r)
+	}
 	json.NewEncoder(rw).Encode(res)
 }
 
