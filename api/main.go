@@ -18,6 +18,7 @@ var (
 	crawlerDBPath = flag.String("crawler-db-path", "../crawler/nodetable", "Crawler Database SQLite Path")
 	apiDBPath     = flag.String("api-db-path", "nodes", "API Database SQLite Path")
 	dropNodesTime = flag.Duration("drop-time", 24*time.Hour, "Time to drop crawled nodes")
+	networkID     = flag.String("networkid", "1", "Filter Ethereum Network ID")
 )
 
 func main() {
@@ -58,7 +59,7 @@ func newNodeDeamon(wg *sync.WaitGroup, crawlerDB *sql.DB, nodeDB *sql.DB) {
 	defer wg.Done()
 	lastCheck := time.Time{}
 	for {
-		nodes, err := input.ReadRecentNodes(crawlerDB, lastCheck)
+		nodes, err := input.ReadRecentNodes(crawlerDB, lastCheck, *networkID)
 		fmt.Println("Time of last check: ", lastCheck)
 		fmt.Println("Read nodes from crawler db : ", len(nodes))
 		if err != nil {

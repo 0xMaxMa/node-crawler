@@ -3,7 +3,7 @@ import Home from "../pages/Home";
 import ViewAll from "../pages/ViewAll";
 import { Layout } from './Layout';
 
-import '../styles/react-bootstrap-table2.min.css';
+// import '../styles/react-bootstrap-table2.min.css';
 
 export function Routing() {
   return (

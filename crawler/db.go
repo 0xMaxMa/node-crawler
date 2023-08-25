@@ -46,8 +46,9 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 			Seq,
 			Score,
 			ConnType,
-			Validator) 
-			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+			Validator,
+			Enode) 
+			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
 		return err
 	}
@@ -111,6 +112,8 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 		var isValidator bool
 		isValidator = !bytes.Equal(a, make([]byte, len(a)))
 
+		log.Info("Debug", "n", n, "url", n.N.URLv4())
+
 		_, err = stmt.Exec(
 			n.N.ID().String(),
 			now.String(),
@@ -133,6 +136,7 @@ func updateNodes(db *sql.DB, geoipDB *geoip2.Reader, nodes []nodeJSON) error {
 			n.Score,
 			connType,
 			isValidator,
+			n.N.URLv4(),
 		)
 		if err != nil {
 			return err
@@ -166,6 +170,7 @@ func createDB(db *sql.DB) error {
 		Score number,
 		ConnType text,
 		Validator BOOLEAN,
+		Enode text,
 		PRIMARY KEY (ID, Now)
 	);
 	delete from nodes;

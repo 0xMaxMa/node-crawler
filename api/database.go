@@ -30,6 +30,7 @@ func createDB(db *sql.DB) error {
 		last_crawled datetime,
 		country_name text,
 		validator boolean,
+		networkID text,
 		PRIMARY KEY (ID)
 	);
 	delete from nodes;
@@ -53,8 +54,8 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 			name, 
 			version_major, version_minor, version_patch, version_tag, version_build, version_date, 
 			os_name, os_architecture, 
-			language_name, language_version, total_difficulty, last_crawled, country_name, validator)
-			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(ID) DO UPDATE SET 
+			language_name, language_version, total_difficulty, last_crawled, country_name, validator, networkID)
+			values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(ID) DO UPDATE SET 
 			name=excluded.name,
 			ip=excluded.ip,
 			conn_type=excluded.conn_type,
@@ -71,7 +72,8 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 			total_difficulty=excluded.total_difficulty,
 			last_crawled=excluded.last_crawled,
 			country_name=excluded.country_name,
-			validator=excluded.validator
+			validator=excluded.validator,
+			networkID=excluded.networkID
 			WHERE name=excluded.name OR excluded.name != "unknown"`)
 	if err != nil {
 		return err
@@ -99,6 +101,7 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 				time.Now(),
 				node.Country,
 				node.Validator,
+				node.NetworkID,
 			)
 			if err != nil {
 				panic(err)
@@ -124,6 +127,7 @@ func InsertCrawledNodes(db *sql.DB, crawledNodes []input.CrawledNode) error {
 					time.Now(),
 					node.Country,
 					node.Validator,
+					node.NetworkID,
 				)
 				if err != nil {
 					panic(err)
